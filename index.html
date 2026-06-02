@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Anime Tracker</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --container-bg: #16213e;
+            --text-main: #e94560;
+            --text-light: #fff;
+            --input-bg: #0f3460;
+            --button-hover: #d83a54;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        input, select, button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        input, select {
+            background-color: var(--input-bg);
+            color: var(--text-light);
+            flex: 1;
+            min-width: 150px;
+        }
+
+        input::placeholder {
+            color: #aaa;
+        }
+
+        button {
+            background-color: var(--text-main);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            flex-basis: 100%;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--input-bg);
+        }
+
+        th {
+            color: var(--text-main);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .delete-btn {
+            background-color: transparent;
+            color: #ff4c4c;
+            border: 1px solid #ff4c4c;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #ff4c4c;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            th, td {
+                font-size: 0.85rem;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>My Anime Tracker</h1>
+        
+        <form id="anime-form">
+            <input type="text" id="title" placeholder="Anime Title" required>
+            <select id="status" required>
+                <option value="" disabled selected>Status</option>
+                <option value="Watching">Watching</option>
+                <option value="Completed">Completed</option>
+                <option value="Plan to Watch">Plan to Watch</option>
+                <option value="Dropped">Dropped</option>
+            </select>
+            <input type="number" id="episodes" placeholder="Ep Count" min="0" required>
+            <input type="number" id="rating" placeholder="Rating (1-10)" min="1" max="10">
+            <button type="submit">Add Anime</button>
+        </form>
+
+        <table id="anime-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Episodes</th>
+                    <th>Rating</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="anime-list">
+                <!-- Anime items will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // DOM Elements
+        const animeForm = document.getElementById('anime-form');
+        const animeListElement = document.getElementById('anime-list');
+        
+        // Load from Local Storage or create empty array
+        let animeData = JSON.parse(localStorage.getItem('myAnimeList')) || [];
+
+        // Function to render the table
+        function renderTable() {
+            animeListElement.innerHTML = ''; // Clear table
+            
+            animeData.forEach((anime, index) => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${anime.title}</td>
+                    <td>${anime.status}</td>
+                    <td>${anime.episodes}</td>
+                    <td>${anime.rating ? anime.rating + '/10' : '-'}</td>
+                    <td><button class="delete-btn" onclick="deleteAnime(${index})">X</button></td>
+                `;
+                
+                animeListElement.appendChild(row);
+            });
+        }
+
+        // Function to Add Anime
+        animeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const status = document.getElementById('status').value;
+            const episodes = document.getElementById('episodes').value;
+            const rating = document.getElementById('rating').value;
+            
+            const newAnime = {
+                title,
+                status,
+                episodes,
+                rating
+            };
+            
+            animeData.push(newAnime);
+            localStorage.setItem('myAnimeList', JSON.stringify(animeData));
+            
+            renderTable();
+            animeForm.reset(); // Clear form inputs
+        });
+
+        // Function to Delete Anime
+        function deleteAnime(index) {
+            animeData.splice(index, 1);
+            localStorage.setItem('myAnimeList', JSON.stringify(animeData));
+            renderTable();
+        }
+
+        // Initial Render
+        renderTable();
+    </script>
+</body>
+</html>
