@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANIME VAULT — High Level Anime Tracker</title>
+  <meta name="description" content="A powerful, modern anime tracker that stores your list in your browser with advanced filtering, progress tracking, notes, favorites, and analytics." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #07070c;
+      --bg-2: #0e0f17;
+      --panel: rgba(17, 18, 29, 0.72);
+      --panel-strong: rgba(21, 23, 36, 0.92);
+      --line: rgba(255,255,255,0.09);
+      --line-strong: rgba(255,255,255,0.14);
+      --text: #f6f7fb;
+      --muted: #a7abc2;
+      --soft: #7f85a3;
+      --accent: #8b5cf6;
+      --accent-2: #22d3ee;
+      --accent-3: #ff4d9a;
+      --good: #3ddc97;
+      --warn: #ffb84d;
+      --danger: #ff667d;
+      --shadow: 0 24px 80px rgba(0,0,0,0.45);
+      --radius: 24px;
+      --radius-sm: 16px;
+      --max: 1440px;
+      --grid-gap: clamp(14px, 2vw, 24px);
+      --blur: 18px;
+    }
+
+    *{ box-sizing: border-box; }
+    html{ scroll-behavior:smooth; }
+    body{
+      margin:0;
+      font-family:"Space Grotesk", sans-serif;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(139,92,246,.18), transparent 30%),
+        radial-gradient(circle at 85% 14%, rgba(34,211,238,.14), transparent 28%),
+        radial-gradient(circle at 80% 82%, rgba(255,77,154,.12), transparent 24%),
+        linear-gradient(180deg, #07070c 0%, #090b13 48%, #07070c 100%);
+      color:var(--text);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, black 35%, transparent 100%);
+      opacity:.4;
+    }
+
+    .orb, .orb-2, .orb-3{
+      position:fixed;
+      border-radius:50%;
+      filter: blur(70px);
+      z-index:-1;
+      opacity:.65;
+      animation: drift 16s ease-in-out infinite alternate;
+    }
+    .orb{ width:340px;height:340px;background:rgba(139,92,246,.22);top:-80px;left:-60px; }
+    .orb-2{ width:280px;height:280px;background:rgba(34,211,238,.18);right:-60px;top:90px;animation-duration:18s; }
+    .orb-3{ width:260px;height:260px;background:rgba(255,77,154,.15);bottom:-60px;left:40%;animation-duration:20s; }
+
+    @keyframes drift{
+      from{ transform:translate3d(0,0,0) scale(1); }
+      to{ transform:translate3d(20px,-18px,0) scale(1.08); }
+    }
+
+    .wrap{
+      width:min(calc(100% - 28px), var(--max));
+      margin:0 auto;
+    }
+
+    .reveal{
+      opacity:0;
+      transform:translateY(18px);
+      transition: opacity .75s ease, transform .75s cubic-bezier(.2,.8,.2,1);
+    }
+    .reveal.visible{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter: blur(var(--blur));
+      background:linear-gradient(180deg, rgba(8,9,15,.82), rgba(8,9,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.07);
+    }
+    .topbar-inner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:14px 0;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      text-decoration:none;
+      color:var(--text);
+      min-width:0;
+    }
+    .brand-mark{
+      width:48px;height:48px;
+      border-radius:16px;
+      position:relative;
+      background:
+        linear-gradient(145deg, rgba(139,92,246,.25), rgba(34,211,238,.18)),
+        rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.35);
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .brand-mark::before,
+    .brand-mark::after{
+      content:"";
+      position:absolute;
+      inset:auto;
+      border-radius:999px;
+    }
+    .brand-mark::before{
+      width:28px;height:28px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-3));
+      top:8px; left:8px;
+      box-shadow: 14px 10px 0 -6px rgba(34,211,238,.95);
+    }
+    .brand-mark::after{
+      width:42px;height:2px;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,.8), transparent);
+      bottom:12px; left:3px;
+      transform:rotate(-16deg);
+      opacity:.8;
+    }
+    .brand-text{
+      min-width:0;
+    }
+    .brand-kicker{
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.22em;
+      color:var(--accent-2);
+      display:block;
+      margin-bottom:2px;
+    }
+    .brand-title{
+      font-family:"Unbounded", sans-serif;
+      font-size:clamp(1rem, 2vw, 1.2rem);
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+
+    .nav-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .btn, button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      font:inherit;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      min-height:46px;
+      padding:0 16px;
+      border-radius:999px;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      transition:transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .22s ease;
+      white-space:nowrap;
+    }
+    .btn:hover{
+      transform:translateY(-2px) scale(1.01);
+      border-color:rgba(255,255,255,.24);
+      background:rgba(255,255,255,.08);
+      box-shadow:0 10px 24px rgba(0,0,0,.28);
+    }
+    .btn:active{ transform:translateY(0) scale(.98); }
+    .btn-primary{
+      background:linear-gradient(135deg, var(--accent), var(--accent-3));
+      border-color:transparent;
+      box-shadow:0 12px 28px rgba(139,92,246,.28);
+    }
+    .btn-primary:hover{
+      box-shadow:0 18px 34px rgba(139,92,246,.34);
+      filter:saturate(1.08);
+    }
+    .btn-secondary{
+      background:linear-gradient(135deg, rgba(34,211,238,.12), rgba(139,92,246,.12));
+    }
+    .btn-danger{
+      background:rgba(255,102,125,.1);
+      color:#ffd8de;
+      border-color:rgba(255,102,125,.24);
+    }
+
+    .hero{
+      padding: clamp(34px, 6vw, 82px) 0 30px;
+    }
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.18fr .82fr;
+      gap:var(--grid-gap);
+      align-items:stretch;
+    }
+
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      backdrop-filter: blur(var(--blur));
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero-main{
+      padding: clamp(24px, 4vw, 46px);
+      min-height: 520px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      isolation:isolate;
+    }
+    .hero-main::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:
+        radial-gradient(circle at 78% 18%, rgba(34,211,238,.17), transparent 24%),
+        radial-gradient(circle at 24% 90%, rgba(255,77,154,.12), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01));
+      z-index:-1;
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      width:max-content;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:999px;
+      padding:8px 12px;
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      font-size:.72rem;
+    }
+    .eyebrow-dot{
+      width:8px;height:8px;border-radius:50%;
+      background:linear-gradient(135deg, var(--accent-2), var(--accent-3));
+      box-shadow:0 0 16px rgba(34,211,238,.55);
+    }
+
+    h1,h2,h3{
+      font-family:"Unbounded", sans-serif;
+      line-height:.98;
+      margin:0;
+    }
+    h1{
+      font-size:clamp(2.5rem, 7vw, 5.7rem);
+      max-width:10ch;
+      letter-spacing:-.04em;
+      margin-top:20px;
+      text-wrap:balance;
+    }
+    .hero-sub{
+      max-width:58ch;
+      color:var(--muted);
+      font-size:clamp(1rem, 1.7vw, 1.18rem);
+      line-height:1.7;
+      margin:20px 0 28px;
+    }
+
+    .hero-actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:26px;
+    }
+
+    .hero-stats{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:14px;
+    }
+    .stat-block{
+      padding:16px 16px 18px;
+      border-radius:18px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .stat-label{
+      color:var(--soft);
+      font-size:.82rem;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      margin-bottom:10px;
+    }
+    .stat-value{
+      font-family:"Unbounded", sans-serif;
+      font-size:clamp(1.2rem, 2.2vw, 2rem);
+    }
+
+    .hero-side{
+      display:grid;
+      grid-template-rows: 1fr auto;
+      gap:var(--grid-gap);
+    }
+    .visual-panel{
+      padding:22px;
+      min-height:320px;
+      display:grid;
+      place-items:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .visual-core{
+      width:min(100%, 360px);
+      aspect-ratio: 1 / 1;
+      position:relative;
+      border-radius:32px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.02)),
+        radial-gradient(circle at 35% 32%, rgba(255,77,154,.3), transparent 28%),
+        radial-gradient(circle at 70% 70%, rgba(34,211,238,.24), transparent 25%);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 30px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .visual-core::before{
+      content:"";
+      position:absolute;
+      inset:10%;
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.12);
+      transform:rotate(12deg);
+    }
+    .visual-core::after{
+      content:"";
+      position:absolute;
+      width:58%;
+      height:58%;
+      left:21%;
+      top:21%;
+      border-radius:24px;
+      background:
+        linear-gradient(135deg, rgba(139,92,246,.6), rgba(255,77,154,.34)),
+        rgba(255,255,255,.03);
+      filter: blur(.2px);
+      transform:rotate(-14deg);
+      box-shadow:0 0 0 1px rgba(255,255,255,.1), 0 24px 60px rgba(139,92,246,.24);
+    }
+    .floating-chip{
+      position:absolute;
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(10,11,19,.74);
+      border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(10px);
+      color:var(--text);
+      font-size:.88rem;
+      box-shadow:0 12px 30px rgba(0,0,0,.28);
+      animation: floaty 5s ease-in-out infinite alternate;
+    }
+    .chip-1{ top:14%; left:10%; }
+    .chip-2{ right:9%; top:19%; animation-delay:.8s; }
+    .chip-3{ bottom:16%; left:15%; animation-delay:1.3s; }
+    .chip-4{ right:14%; bottom:11%; animation-delay:2s; }
+
+    @keyframes floaty{
+      from{ transform:translateY(0px); }
+      to{ transform:translateY(-10px); }
+    }
+
+    .mini-note{
+      padding:22px;
+      display:grid;
+      gap:10px;
+      align-content:center;
+    }
+    .mini-note p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.6;
+    }
+
+    .section{
+      padding: 12px 0 30px;
+    }
+
+    .tracker-grid{
+      display:grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap:var(--grid-gap);
+      align-items:start;
+    }
+
+    .stack{
+      display:grid;
+      gap:var(--grid-gap);
+    }
+
+    .section-panel{
+      padding: clamp(18px, 2vw, 28px);
+    }
+
+    .section-top{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+    .section-title{
+      font-size:clamp(1.15rem, 2vw, 1.8rem);
+      letter-spacing:-.03em;
+    }
+    .section-copy{
+      color:var(--muted);
+      max-width:60ch;
+      line-height:1.6;
+      margin-top:8px;
+    }
+
+    form{
+      display:grid;
+      gap:14px;
+    }
+    .field-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:14px;
+    }
+    .field{
+      display:grid;
+      gap:8px;
+    }
+    .field.span-2{ grid-column: span 2; }
+
+    label{
+      font-size:.82rem;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      color:var(--soft);
+    }
+
+    input, select, textarea{
+      width:100%;
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:18px;
+      min-height:54px;
+      padding:14px 16px;
+      font:inherit;
+      outline:none;
+      transition:border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+    textarea{
+      min-height:108px;
+      resize:vertical;
+    }
+    input::placeholder, textarea::placeholder{
+      color:#79809e;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color:rgba(139,92,246,.65);
+      background:rgba(255,255,255,.06);
+      box-shadow:0 0 0 4px rgba(139,92,246,.12);
+    }
+
+    .form-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:4px;
+    }
+
+    .analytics{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:14px;
+    }
+    .metric{
+      padding:18px;
+      border-radius:18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .metric .k{
+      font-size:.78rem;
+      color:var(--soft);
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      margin-bottom:8px;
+    }
+    .metric .v{
+      font-family:"Unbounded", sans-serif;
+      font-size:clamp(1.1rem, 2vw, 1.7rem);
+      margin-bottom:4px;
+    }
+    .metric .s{
+      color:var(--muted);
+      font-size:.92rem;
+    }
+
+    .toolbar{
+      display:grid;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .toolbar-row{
+      display:grid;
+      grid-template-columns: 1.2fr .75fr .75fr;
+      gap:12px;
+    }
+
+    .table-shell{
+      overflow:hidden;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+    }
+    .table-head, .anime-row{
+      display:grid;
+      grid-template-columns: 2.2fr .95fr .85fr .85fr .8fr 1.15fr;
+      gap:12px;
+      align-items:center;
+      padding:14px 18px;
+    }
+    .table-head{
+      background:rgba(255,255,255,.03);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      color:var(--soft);
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-size:.75rem;
+    }
+    .list{
+      display:grid;
+    }
+    .anime-row{
+      border-bottom:1px solid rgba(255,255,255,.06);
+      transition:background .2s ease, transform .2s ease;
+    }
+    .anime-row:hover{
+      background:rgba(255,255,255,.04);
+    }
+    .anime-row:last-child{ border-bottom:none; }
+
+    .title-wrap{
+      display:grid;
+      gap:6px;
+      min-width:0;
+    }
+    .anime-title{
+      font-weight:700;
+      font-size:1rem;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .anime-title-text{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .subline{
+      color:var(--muted);
+      font-size:.88rem;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      border:1px solid transparent;
+      font-size:.84rem;
+      white-space:nowrap;
+    }
+    .status-watching{ background:rgba(61,220,151,.1); color:#b7ffdb; border-color:rgba(61,220,151,.2); }
+    .status-completed{ background:rgba(34,211,238,.1); color:#c9f8ff; border-color:rgba(34,211,238,.22); }
+    .status-plan{ background:rgba(139,92,246,.12); color:#dfd1ff; border-color:rgba(139,92,246,.22); }
+    .status-paused{ background:rgba(255,184,77,.1); color:#ffe0ae; border-color:rgba(255,184,77,.24); }
+    .status-dropped{ background:rgba(255,102,125,.1); color:#ffd5dc; border-color:rgba(255,102,125,.24); }
+
+    .rating{
+      font-weight:700;
+      color:#ffe7a3;
+    }
+
+    .favorite{
+      color:#ffd369;
+      text-shadow:0 0 20px rgba(255,211,105,.26);
+    }
+
+    .row-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-start;
+    }
+
+    .icon-btn{
+      min-height:38px;
+      min-width:38px;
+      padding:0 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.1);
+      transition:transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .icon-btn:hover{
+      transform:translateY(-1px);
+      background:rgba(255,255,255,.08);
+      border-color:rgba(255,255,255,.18);
+    }
+    .icon-btn:active{ transform:scale(.97); }
+
+    .empty{
+      padding:42px 20px;
+      text-align:center;
+      color:var(--muted);
+    }
+    .empty strong{
+      display:block;
+      color:var(--text);
+      font-size:1.15rem;
+      margin-bottom:8px;
+    }
+
+    .footer{
+      padding: 26px 0 48px;
+      color:var(--soft);
+      text-align:center;
+      font-size:.92rem;
+    }
+
+    .toast{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      z-index:80;
+      display:grid;
+      gap:10px;
+      width:min(92vw, 360px);
+    }
+    .toast-item{
+      background:rgba(15,17,27,.88);
+      border:1px solid rgba(255,255,255,.1);
+      color:var(--text);
+      padding:14px 16px;
+      border-radius:18px;
+      backdrop-filter:blur(12px);
+      box-shadow:0 16px 38px rgba(0,0,0,.34);
+      animation: toastIn .35s ease forwards;
+    }
+    @keyframes toastIn{
+      from{ opacity:0; transform:translateY(12px) scale(.98); }
+      to{ opacity:1; transform:translateY(0) scale(1); }
+    }
+
+    .stagger > *{
+      opacity:0;
+      transform:translateY(16px);
+      animation:staggerIn .7s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+    .stagger > *:nth-child(1){ animation-delay:.05s; }
+    .stagger > *:nth-child(2){ animation-delay:.12s; }
+    .stagger > *:nth-child(3){ animation-delay:.19s; }
+    .stagger > *:nth-child(4){ animation-delay:.26s; }
+    .stagger > *:nth-child(5){ animation-delay:.33s; }
+    .stagger > *:nth-child(6){ animation-delay:.4s; }
+
+    @keyframes staggerIn{
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    @media (max-width: 1140px){
+      .hero-grid,
+      .tracker-grid{
+        grid-template-columns:1fr;
+      }
+      .hero-main{ min-height:auto; }
+    }
+
+    @media (max-width: 820px){
+      .toolbar-row,
+      .field-grid,
+      .analytics{
+        grid-template-columns:1fr;
+      }
+      .field.span-2{ grid-column:span 1; }
+      .table-head{
+        display:none;
+      }
+      .anime-row{
+        grid-template-columns:1fr;
+        gap:10px;
+        padding:16px;
+      }
+      .anime-row > div::before{
+        display:block;
+        font-size:.72rem;
+        text-transform:uppercase;
+        letter-spacing:.14em;
+        color:var(--soft);
+        margin-bottom:6px;
+      }
+      .anime-row > div:nth-child(1)::before{ content:"Title"; }
+      .anime-row > div:nth-child(2)::before{ content:"Status"; }
+      .anime-row > div:nth-child(3)::before{ content:"Progress"; }
+      .anime-row > div:nth-child(4)::before{ content:"Rating"; }
+      .anime-row > div:nth-child(5)::before{ content:"Type"; }
+      .anime-row > div:nth-child(6)::before{ content:"Actions"; }
+      .hero-stats{
+        grid-template-columns:1fr;
+      }
+      .topbar-inner{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+      .nav-actions{
+        width:100%;
+        justify-content:flex-start;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *, *::before, *::after{
+        animation:none !important;
+        transition:none !important;
+        scroll-behavior:auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb"></div>
+  <div class="orb-2"></div>
+  <div class="orb-3"></div>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a href="#" class="brand" aria-label="Anime Vault home">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-text">
+          <span class="brand-kicker">Personal archive system</span>
+          <div class="brand-title">ANIME VAULT</div>
+        </div>
+      </a>
+
+      <div class="nav-actions">
+        <button class="btn btn-secondary" id="exportBtn" type="button">Export JSON</button>
+        <label class="btn" for="importInput" style="cursor:pointer;">Import JSON</label>
+        <input id="importInput" type="file" accept="application/json" hidden>
+        <button class="btn btn-danger" id="clearAllBtn" type="button">Clear Library</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <article class="panel hero-main stagger reveal">
+          <div>
+            <div class="eyebrow">
+              <span class="eyebrow-dot"></span>
+              Elite anime tracking, locally stored
+            </div>
+            <h1>Track every arc, episode, score, and obsession.</h1>
+            <p class="hero-sub">
+              A high-level anime tracker built to feel premium: local storage persistence, real-time analytics,
+              smart filtering, favorites, notes, progress tracking, and clean data control — all in one powerful interface.
+            </p>
+            <div class="hero-actions">
+              <a href="#tracker" class="btn btn-primary">Open Tracker</a>
+              <button class="btn" id="seedBtn" type="button">Load Demo Data</button>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-block">
+              <div class="stat-label">Library Size</div>
+              <div class="stat-value" id="heroTotal">0</div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-label">Episodes Logged</div>
+              <div class="stat-value" id="heroEpisodes">0</div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-label">Average Score</div>
+              <div class="stat-value" id="heroAverage">0.0</div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="hero-side reveal">
+          <div class="panel visual-panel">
+            <div class="visual-core" aria-hidden="true">
+              <div class="floating-chip chip-1">Favorites ★</div>
+              <div class="floating-chip chip-2">Progress Sync</div>
+              <div class="floating-chip chip-3">Notes + Tags</div>
+              <div class="floating-chip chip-4">Instant Save</div>
+            </div>
+          </div>
+
+          <div class="panel mini-note">
+            <h2 class="section-title">Built to actually store your things</h2>
+            <p>
+              Everything is saved in your browser using localStorage. Refresh, close the tab, come back later —
+              your anime list stays here unless you clear it.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="tracker">
+      <div class="wrap tracker-grid">
+        <div class="stack">
+          <section class="panel section-panel reveal">
+            <div class="section-top">
+              <div>
+                <h2 class="section-title">Add or edit anime</h2>
+                <p class="section-copy">Create entries with title, status, episode progress, score, type, favorite state, and personal notes.</p>
+              </div>
+            </div>
+
+            <form id="animeForm" autocomplete="off">
+              <input type="hidden" id="animeId" />
+              <div class="field-grid">
+                <div class="field span-2">
+                  <label for="title">Title</label>
+                  <input id="title" type="text" placeholder="e.g. Frieren: Beyond Journey's End" required />
+                </div>
+
+                <div class="field">
+                  <label for="status">Status</label>
+                  <select id="status" required>
+                    <option value="Watching">Watching</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Plan to Watch">Plan to Watch</option>
+                    <option value="Paused">Paused</option>
+                    <option value="Dropped">Dropped</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="type">Type</label>
+                  <select id="type">
+                    <option value="TV">TV</option>
+                    <option value="Movie">Movie</option>
+                    <option value="OVA">OVA</option>
+                    <option value="ONA">ONA</option>
+                    <option value="Special">Special</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="watched">Episodes Watched</label>
+                  <input id="watched" type="number" min="0" placeholder="12" required />
+                </div>
+
+                <div class="field">
+                  <label for="total">Total Episodes</label>
+                  <input id="total" type="number" min="0" placeholder="24" required />
+                </div>
+
+                <div class="field">
+                  <label for="rating">Rating / 10</label>
+                  <input id="rating" type="number" min="0" max="10" step="0.1" placeholder="9.2" />
+                </div>
+
+                <div class="field">
+                  <label for="favorite">Favorite</label>
+                  <select id="favorite">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+
+                <div class="field span-2">
+                  <label for="notes">Notes</label>
+                  <textarea id="notes" placeholder="What stood out? Best arc? Animation quality? Characters?"></textarea>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit" id="saveBtn">Save Entry</button>
+                <button class="btn" type="button" id="resetBtn">Reset Form</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel section-panel reveal">
+            <div class="section-top">
+              <div>
+                <h2 class="section-title">Live analytics</h2>
+                <p class="section-copy">Your personal anime dashboard updates instantly as you add, rate, and complete shows.</p>
+              </div>
+            </div>
+
+            <div class="analytics">
+              <div class="metric">
+                <div class="k">Currently Watching</div>
+                <div class="v" id="countWatching">0</div>
+                <div class="s">Active series in progress</div>
+              </div>
+              <div class="metric">
+                <div class="k">Completed</div>
+                <div class="v" id="countCompleted">0</div>
+                <div class="s">Finished entries in your vault</div>
+              </div>
+              <div class="metric">
+                <div class="k">Plan to Watch</div>
+                <div class="v" id="countPlan">0</div>
+                <div class="s">Queued for later</div>
+              </div>
+              <div class="metric">
+                <div class="k">Favorites</div>
+                <div class="v" id="countFavorites">0</div>
+                <div class="s">Marked as top-tier picks</div>
+              </div>
+              <div class="metric">
+                <div class="k">Top Score</div>
+                <div class="v" id="topRated">—</div>
+                <div class="s">Highest rated anime in your list</div>
+              </div>
+              <div class="metric">
+                <div class="k">Completion Rate</div>
+                <div class="v" id="completionRate">0%</div>
+                <div class="s">Completed out of total entries</div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel section-panel reveal">
+          <div class="section-top">
+            <div>
+              <h2 class="section-title">Anime library</h2>
+              <p class="section-copy">Search, sort, and manage everything with a high-clarity list view designed for speed and control.</p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-row">
+              <input id="searchInput" type="text" placeholder="Search title or notes..." aria-label="Search anime" />
+              <select id="filterStatus" aria-label="Filter by status">
+                <option value="All">All Statuses</option>
+                <option value="Watching">Watching</option>
+                <option value="Completed">Completed</option>
+                <option value="Plan to Watch">Plan to Watch</option>
+                <option value="Paused">Paused</option>
+                <option value="Dropped">Dropped</option>
+              </select>
+              <select id="sortBy" aria-label="Sort anime">
+                <option value="updated-desc">Recently Updated</option>
+                <option value="title-asc">Title A–Z</option>
+                <option value="rating-desc">Rating High–Low</option>
+                <option value="progress-desc">Progress High–Low</option>
+                <option value="favorite-desc">Favorites First</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-shell">
+            <div class="table-head">
+              <div>Title</div>
+              <div>Status</div>
+              <div>Progress</div>
+              <div>Rating</div>
+              <div>Type</div>
+              <div>Actions</div>
+            </div>
+            <div class="list" id="animeList"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    ANIME VAULT — premium local anime tracking, built in one file and saved on your device.
+  </footer>
+
+  <div class="toast" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    const STORAGE_KEY = "animeVaultData_v1";
+
+    const animeForm = document.getElementById("animeForm");
+    const animeId = document.getElementById("animeId");
+    const titleInput = document.getElementById("title");
+    const statusInput = document.getElementById("status");
+    const typeInput = document.getElementById("type");
+    const watchedInput = document.getElementById("watched");
+    const totalInput = document.getElementById("total");
+    const ratingInput = document.getElementById("rating");
+    const favoriteInput = document.getElementById("favorite");
+    const notesInput = document.getElementById("notes");
+
+    const animeList = document.getElementById("animeList");
+    const searchInput = document.getElementById("searchInput");
+    const filterStatus = document.getElementById("filterStatus");
+    const sortBy = document.getElementById("sortBy");
+
+    const exportBtn = document.getElementById("exportBtn");
+    const importInput = document.getElementById("importInput");
+    const clearAllBtn = document.getElementById("clearAllBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const seedBtn = document.getElementById("seedBtn");
+
+    const heroTotal = document.getElementById("heroTotal");
+    const heroEpisodes = document.getElementById("heroEpisodes");
+    const heroAverage = document.getElementById("heroAverage");
+
+    const countWatching = document.getElementById("countWatching");
+    const countCompleted = document.getElementById("countCompleted");
+    const countPlan = document.getElementById("countPlan");
+    const countFavorites = document.getElementById("countFavorites");
+    const topRated = document.getElementById("topRated");
+    const completionRate = document.getElementById("completionRate");
+
+    const toastContainer = document.getElementById("toastContainer");
+
+    let animeData = loadData();
+
+    function loadData(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      }catch{
+        return [];
+      }
+    }
+
+    function saveData(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(animeData));
+    }
+
+    function toast(message){
+      const item = document.createElement("div");
+      item.className = "toast-item";
+      item.textContent = message;
+      toastContainer.appendChild(item);
+      setTimeout(() => {
+        item.style.opacity = "0";
+        item.style.transform = "translateY(8px)";
+        item.style.transition = "all .3s ease";
+        setTimeout(() => item.remove(), 300);
+      }, 2400);
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function statusClass(status){
+      if(status === "Watching") return "status-watching";
+      if(status === "Completed") return "status-completed";
+      if(status === "Plan to Watch") return "status-plan";
+      if(status === "Paused") return "status-paused";
+      return "status-dropped";
+    }
+
+    function getProgressPercent(item){
+      const watched = Number(item.watched) || 0;
+      const total = Number(item.total) || 0;
+      if(total <= 0) return 0;
+      return Math.min(100, Math.round((watched / total) * 100));
+    }
+
+    function formToObject(){
+      const watched = Math.max(0, Number(watchedInput.value) || 0);
+      const total = Math.max(0, Number(totalInput.value) || 0);
+      const ratingRaw = ratingInput.value.trim();
+      const rating = ratingRaw === "" ? null : Math.max(0, Math.min(10, Number(ratingRaw)));
+
+      return {
+        id: animeId.value || crypto.randomUUID(),
+        title: titleInput.value.trim(),
+        status: statusInput.value,
+        type: typeInput.value,
+        watched,
+        total,
+        rating,
+        favorite: favoriteInput.value === "true",
+        notes: notesInput.value.trim(),
+        updatedAt: Date.now()
+      };
+    }
+
+    function resetForm(){
+      animeForm.reset();
+      animeId.value = "";
+      statusInput.value = "Watching";
+      typeInput.value = "TV";
+      favoriteInput.value = "false";
+      document.getElementById("saveBtn").textContent = "Save Entry";
+    }
+
+    function populateForm(item){
+      animeId.value = item.id;
+      titleInput.value = item.title;
+      statusInput.value = item.status;
+      typeInput.value = item.type || "TV";
+      watchedInput.value = item.watched;
+      totalInput.value = item.total;
+      ratingInput.value = item.rating ?? "";
+      favoriteInput.value = String(!!item.favorite);
+      notesInput.value = item.notes || "";
+      document.getElementById("saveBtn").textContent = "Update Entry";
+      window.scrollTo({ top: document.getElementById("tracker").offsetTop - 70, behavior: "smooth" });
+      titleInput.focus();
+    }
+
+    function deleteAnime(id){
+      animeData = animeData.filter(item => item.id !== id);
+      saveData();
+      renderAll();
+      toast("Anime removed from your vault.");
+    }
+
+    function toggleFavorite(id){
+      animeData = animeData.map(item =>
+        item.id === id ? { ...item, favorite: !item.favorite, updatedAt: Date.now() } : item
+      );
+      saveData();
+      renderAll();
+    }
+
+    function filteredData(){
+      const q = searchInput.value.trim().toLowerCase();
+      const statusFilter = filterStatus.value;
+      const sort = sortBy.value;
+
+      let result = animeData.filter(item => {
+        const text = `${item.title} ${item.notes || ""}`.toLowerCase();
+        const matchesSearch = !q || text.includes(q);
+        const matchesStatus = statusFilter === "All" || item.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+
+      result.sort((a, b) => {
+        if(sort === "title-asc") return a.title.localeCompare(b.title);
+        if(sort === "rating-desc") return (b.rating ?? -1) - (a.rating ?? -1);
+        if(sort === "progress-desc") return getProgressPercent(b) - getProgressPercent(a);
+        if(sort === "favorite-desc") return Number(b.favorite) - Number(a.favorite) || b.updatedAt - a.updatedAt;
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+
+      return result;
+    }
+
+    function renderList(){
+      const items = filteredData();
+
+      if(items.length === 0){
+        animeList.innerHTML = `
+          <div class="empty">
+            <strong>No anime found.</strong>
+            Add your first entry, or change your search and filters.
+          </div>
+        `;
+        return;
+      }
+
+      animeList.innerHTML = items.map(item => {
+        const progress = getProgressPercent(item);
+        const notes = item.notes ? escapeHtml(item.notes) : "No notes yet";
+        const rating = item.rating == null ? "—" : `<span class="rating">${item.rating.toFixed ? item.rating.toFixed(1) : Number(item.rating).toFixed(1)}</span>`;
+        const favoriteMark = item.favorite ? `<span class="favorite" aria-label="Favorite">★</span>` : "";
+        return `
+          <article class="anime-row">
+            <div class="title-wrap">
+              <div class="anime-title">
+                ${favoriteMark}
+                <span class="anime-title-text">${escapeHtml(item.title)}</span>
+              </div>
+              <div class="subline">${notes}</div>
+            </div>
+
+            <div>
+              <span class="pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span>
+            </div>
+
+            <div>
+              ${item.watched}/${item.total} <span style="color:var(--muted)">(${progress}%)</span>
+            </div>
+
+            <div>${rating}</div>
+
+            <div>${escapeHtml(item.type || "TV")}</div>
+
+            <div class="row-actions">
+              <button class="icon-btn" type="button" onclick="handleEdit('${item.id}')">Edit</button>
+              <button class="icon-btn" type="button" onclick="handleFavorite('${item.id}')">${item.favorite ? "Unstar" : "Star"}</button>
+              <button class="icon-btn" type="button" onclick="handleDelete('${item.id}')">Delete</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderAnalytics(){
+      const totalEntries = animeData.length;
+      const totalEpisodesWatched = animeData.reduce((sum, item) => sum + (Number(item.watched) || 0), 0);
+      const rated = animeData.filter(item => item.rating != null && !Number.isNaN(item.rating));
+      const avg = rated.length ? (rated.reduce((sum, item) => sum + Number(item.rating), 0) / rated.length) : 0;
+
+      const watching = animeData.filter(item => item.status === "Watching").length;
+      const completed = animeData.filter(item => item.status === "Completed").length;
+      const plan = animeData.filter(item => item.status === "Plan to Watch").length;
+      const favorites = animeData.filter(item => item.favorite).length;
+
+      let top = "—";
+      if(rated.length){
+        const best = [...rated].sort((a,b) => Number(b.rating) - Number(a.rating))[0];
+        top = `${best.title} (${Number(best.rating).toFixed(1)})`;
+      }
+
+      const compRate = totalEntries ? Math.round((completed / totalEntries) * 100) : 0;
+
+      heroTotal.textContent = totalEntries;
+      heroEpisodes.textContent = totalEpisodesWatched;
+      heroAverage.textContent = avg.toFixed(1);
+
+      countWatching.textContent = watching;
+      countCompleted.textContent = completed;
+      countPlan.textContent = plan;
+      countFavorites.textContent = favorites;
+      topRated.textContent = top;
+      completionRate.textContent = `${compRate}%`;
+    }
+
+    function renderAll(){
+      renderList();
+      renderAnalytics();
+    }
+
+    animeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const payload = formToObject();
+
+      if(!payload.title){
+        toast("Please enter an anime title.");
+        titleInput.focus();
+        return;
+      }
+
+      if(payload.total > 0 && payload.watched > payload.total){
+        toast("Episodes watched cannot exceed total episodes.");
+        watchedInput.focus();
+        return;
+      }
+
+      const existingIndex = animeData.findIndex(item => item.id === payload.id);
+
+      if(existingIndex >= 0){
+        animeData[existingIndex] = payload;
+        toast("Anime entry updated.");
+      }else{
+        animeData.unshift(payload);
+        toast("Anime added to your vault.");
+      }
+
+      saveData();
+      renderAll();
+      resetForm();
+    });
+
+    resetBtn.addEventListener("click", resetForm);
+
+    searchInput.addEventListener("input", renderList);
+    filterStatus.addEventListener("change", renderList);
+    sortBy.addEventListener("change", renderList);
+
+    exportBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(animeData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "anime-vault-export.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Exported your anime data.");
+    });
+
+    importInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const parsed = JSON.parse(reader.result);
+          if(!Array.isArray(parsed)) throw new Error("Invalid format");
+          animeData = parsed.map(item => ({
+            id: item.id || crypto.randomUUID(),
+            title: item.title || "Untitled",
+            status: item.status || "Plan to Watch",
+            type: item.type || "TV",
+            watched: Number(item.watched) || 0,
+            total: Number(item.total) || 0,
+            rating: item.rating === null || item.rating === "" || typeof item.rating === "undefined" ? null : Number(item.rating),
+            favorite: !!item.favorite,
+            notes: item.notes || "",
+            updatedAt: item.updatedAt || Date.now()
+          }));
+          saveData();
+          renderAll();
+          toast("Import successful.");
+        }catch{
+          toast("Import failed. Please use a valid JSON export.");
+        }finally{
+          importInput.value = "";
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    clearAllBtn.addEventListener("click", () => {
+      const ok = confirm("This will permanently clear your saved anime library from this browser. Continue?");
+      if(!ok) return;
+      animeData = [];
+      saveData();
+      renderAll();
+      resetForm();
+      toast("Library cleared.");
+    });
+
+    seedBtn.addEventListener("click", () => {
+      if(animeData.length && !confirm("Demo data will be added to your existing list. Continue?")) return;
+
+      const samples = [
+        {
+          id: crypto.randomUUID(),
+          title: "Frieren: Beyond Journey's End",
+          status: "Watching",
+          type: "TV",
+          watched: 18,
+          total: 28,
+          rating: 9.6,
+          favorite: true,
+          notes: "Elite atmosphere, character writing, and emotional pacing.",
+          updatedAt: Date.now()
+        },
+        {
+          id: crypto.randomUUID(),
+          title: "Attack on Titan",
+          status: "Completed",
+          type: "TV",
+          watched: 89,
+          total: 89,
+          rating: 9.4,
+          favorite: true,
+          notes: "Massive scale, unforgettable reveals, top-tier tension.",
+          updatedAt: Date.now() - 1000
+        },
+        {
+          id: crypto.randomUUID(),
+          title: "Jujutsu Kaisen 2",
+          status: "Plan to Watch",
+          type: "TV",
+          watched: 0,
+          total: 23,
+          rating: null,
+          favorite: false,
+          notes: "Need to start the Shibuya arc.",
+          updatedAt: Date.now() - 2000
+        }
+      ];
+
+      animeData = [...samples, ...animeData];
+      saveData();
+      renderAll();
+      toast("Demo entries loaded.");
+    });
+
+    window.handleDelete = function(id){
+      const item = animeData.find(x => x.id === id);
+      if(!item) return;
+      if(confirm(`Delete "${item.title}"?`)){
+        deleteAnime(id);
+      }
+    }
+
+    window.handleEdit = function(id){
+      const item = animeData.find(x => x.id === id);
+      if(item) populateForm(item);
+    }
+
+    window.handleFavorite = function(id){
+      toggleFavorite(id);
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting){
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.16 });
+
+    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+
+    resetForm();
+    renderAll();
+  </script>
+</body>
+</html>
